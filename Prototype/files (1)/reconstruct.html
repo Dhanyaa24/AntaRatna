@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reconstruct — Antaratna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Design tokens
+   Subject: AI archaeological discovery over the Vijayanagara
+   ruins at Hampi. Palette pulls from the site itself — dark
+   basalt boulders, brass/bronze artifacts, laterite soil,
+   scrub vegetation — rather than a generic SaaS or "AI" look.
+   ============================================================ */
+:root {
+  --stone-950: #120f0b;
+  --stone-900: #1c1712;
+  --stone-850: #241d16;
+  --stone-800: #2c2318;
+  --stone-700: #3d3122;
+  --stone-600: #5a4a34;
+
+  --parchment: #ede3ce;
+  --parchment-dim: #b8ae98;
+
+  --brass: #c9a24b;
+  --brass-bright: #e0bd6a;
+  --laterite: #c1502e;
+  --laterite-bright: #dd6640;
+  --moss: #6b8f5e;
+  --moss-bright: #86ad78;
+  --scan: #6fa8c9;
+
+  --radius-sm: 2px;
+  --radius-md: 3px;
+
+  --font-display: "Fraunces", "Iowan Old Style", serif;
+  --font-body: "IBM Plex Sans", -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--stone-950);
+  color: var(--parchment);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--brass); color: var(--stone-950); }
+
+a { color: inherit; }
+
+img { max-width: 100%; display: block; }
+
+/* ---------- Layout shell ---------- */
+.wrap {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ---------- Top nav ---------- */
+.topnav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(18, 15, 11, 0.88);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--stone-700);
+}
+.topnav .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  color: var(--parchment);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.brand .mark { color: var(--brass); }
+.navlinks {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.navlinks a {
+  text-decoration: none;
+  font-size: 14px;
+  color: var(--parchment-dim);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.navlinks a:hover { color: var(--parchment); background: var(--stone-850); }
+.navlinks a.active { color: var(--stone-950); background: var(--brass); }
+.navlinks .soon {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--stone-600);
+  margin-left: 5px;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  background: none;
+}
+.btn-primary { background: var(--brass); color: var(--stone-950); }
+.btn-primary:hover { background: var(--brass-bright); }
+.btn-ghost { border-color: var(--stone-600); color: var(--parchment); }
+.btn-ghost:hover { border-color: var(--brass); color: var(--brass-bright); }
+
+/* ---------- Typography helpers ---------- */
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; }
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--brass);
+  letter-spacing: 0.04em;
+}
+.lede {
+  font-size: 17px;
+  color: var(--parchment-dim);
+  max-width: 62ch;
+  line-height: 1.6;
+}
+
+/* ---------- Page head ---------- */
+.pagehead {
+  padding: 44px 0 28px;
+  border-bottom: 1px solid var(--stone-800);
+}
+.pagehead h1 { font-size: 32px; margin-top: 12px; }
+.stage-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--stone-950);
+  background: var(--brass);
+  padding: 3px 8px;
+  display: inline-block;
+  letter-spacing: 0.03em;
+}
+
+/* ---------- Main two-column layout ---------- */
+.recon-shell {
+  padding: 28px 0 80px;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Zone list panel */
+.zone-panel {
+  border: 1px solid var(--stone-700);
+  background: var(--stone-900);
+  position: sticky;
+  top: 88px;
+}
+.zone-panel-head {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--stone-800);
+}
+.zone-panel-head .eyebrow { display:block; margin-bottom: 4px; }
+.zone-panel-head .count { font-size: 12px; color: var(--parchment-dim); }
+.zone-list {
+  max-height: 560px;
+  overflow-y: auto;
+  padding: 6px;
+}
+.zone-list::-webkit-scrollbar { width: 6px; }
+.zone-list::-webkit-scrollbar-thumb { background: var(--stone-700); }
+
+.zone-card {
+  width: 100%;
+  display: block;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 3px;
+  cursor: pointer;
+  color: var(--parchment);
+  font-family: var(--font-body);
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.zone-card:hover { background: var(--stone-850); }
+.zone-card.active { background: var(--stone-850); border-color: var(--brass); }
+.zone-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.zone-card-id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--parchment-dim);
+}
+.zone-card-score {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  border: 1px solid var(--stone-600);
+}
+.zone-card-name {
+  font-size: 13.5px;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+.zone-card-type {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--brass);
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+}
+.zone-card.is-natural .zone-card-type { color: var(--stone-600); }
+
+/* Viewer panel */
+.viewer-panel {
+  border: 1px solid var(--stone-700);
+  background: var(--stone-900);
+}
+.viewer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--stone-800);
+  flex-wrap: wrap;
+}
+.viewer-title { display: flex; flex-direction: column; gap: 2px; }
+.viewer-title .name { font-family: var(--font-display); font-size: 19px; font-weight: 600; }
+.viewer-title .sub { font-family: var(--font-mono); font-size: 11px; color: var(--parchment-dim); }
+.viewmode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--stone-600);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.viewmode-toggle button {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: var(--parchment-dim);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.viewmode-toggle button + button { border-left: 1px solid var(--stone-600); }
+.viewmode-toggle button.active { background: var(--brass); color: var(--stone-950); }
+.viewmode-toggle button:hover:not(.active) { color: var(--parchment); background: var(--stone-850); }
+.viewmode-toggle button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.canvas-wrap {
+  position: relative;
+  height: 460px;
+  background: radial-gradient(ellipse at 50% 30%, #1c1712 0%, #100d0a 100%);
+}
+.canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+.canvas-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 18px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--parchment-dim);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.depth-label {
+  position: absolute;
+  top: 14px;
+  left: 18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--scan);
+  background: rgba(18,15,11,0.7);
+  border: 1px solid rgba(111,168,201,0.35);
+  padding: 5px 10px;
+  border-radius: 2px;
+  transition: opacity 0.2s ease;
+}
+
+.natural-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18,15,11,0.82);
+  text-align: center;
+  padding: 20px;
+}
+.natural-overlay.show { display: flex; }
+.natural-overlay .box { max-width: 420px; }
+.natural-overlay .icon { font-size: 26px; margin-bottom: 10px; }
+.natural-overlay p { color: var(--parchment-dim); font-size: 13.5px; line-height: 1.6; }
+
+/* Info strip below canvas */
+.info-strip {
+  border-top: 1px solid var(--stone-800);
+  padding: 22px 22px 24px;
+}
+.confidence-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.conf-ring {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+.conf-ring::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--stone-900);
+}
+.conf-ring span {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--parchment);
+  font-weight: 500;
+}
+.conf-text .label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--brass);
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+.conf-text .desc { font-size: 14px; color: var(--parchment-dim); max-width: 52ch; }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--stone-800);
+  border: 1px solid var(--stone-800);
+  margin-bottom: 20px;
+}
+.stat-cell { background: var(--stone-900); padding: 14px 16px; }
+.stat-cell .k { font-family: var(--font-mono); font-size: 10.5px; color: var(--stone-600); letter-spacing: 0.03em; margin-bottom: 6px; }
+.stat-cell .v { font-size: 14.5px; color: var(--parchment); }
+
+.basis {
+  border-left: 2px solid var(--stone-700);
+  padding-left: 16px;
+}
+.basis h4 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--parchment-dim);
+  letter-spacing: 0.03em;
+  font-weight: 500;
+  margin: 0 0 10px;
+}
+.basis ul { margin: 0; padding: 0; list-style: none; }
+.basis li {
+  display: flex;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--parchment-dim);
+  padding: 6px 0;
+}
+.basis li .tag {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--stone-950);
+  background: var(--stone-600);
+  padding: 2px 6px;
+  height: fit-content;
+  margin-top: 1px;
+}
+
+.disclaimer-banner {
+  margin-top: 22px;
+  border: 1px solid var(--stone-700);
+  border-left: 3px solid var(--laterite);
+  background: var(--stone-850);
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--parchment-dim);
+  display: flex;
+  gap: 10px;
+}
+.disclaimer-banner strong { color: var(--parchment); }
+
+/* ---------- Footer ---------- */
+.sitefoot {
+  border-top: 1px solid var(--stone-800);
+  padding: 32px 0 48px;
+  margin-top: 32px;
+  color: var(--stone-600);
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+.sitefoot .wrap { display: flex; justify-content: space-between; }
+
+@media (max-width: 900px) {
+  .recon-shell { grid-template-columns: 1fr; }
+  .zone-panel { position: static; }
+  .zone-list { max-height: 300px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .wrap { padding: 0 20px; }
+  .navlinks { display: none; }
+  .canvas-wrap { height: 360px; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">◆</span> Antaratna</a>
+    <div class="navlinks">
+      <a href="index.html">Home</a>
+      <a href="discover.html">Discover</a>
+      <a href="reconstruct.html" class="active">Reconstruct</a>
+      <a href="fragments.html">Fragments <span class="soon">SOON</span></a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <span class="stage-tag">STAGE 02 — RECONSTRUCT</span>
+    <h1>Probable structure reconstruction</h1>
+    <p class="lede" style="margin-top:12px;">Pick a flagged zone from Discover. The model reads its detected geometry, burial
+      depth, and structure-type classification, then generates a probable 3D form — always shown against the confidence
+      that produced it, never as a claim of fact.</p>
+  </div>
+</header>
+
+<main class="wrap recon-shell">
+
+  <!-- ZONE LIST -->
+  <aside class="zone-panel">
+    <div class="zone-panel-head">
+      <span class="eyebrow">FLAGGED ZONES</span>
+      <div class="count" id="zone-count">— from CARA AI scan</div>
+    </div>
+    <div class="zone-list" id="zone-list"></div>
+  </aside>
+
+  <!-- VIEWER -->
+  <section class="viewer-panel">
+    <div class="viewer-toolbar">
+      <div class="viewer-title">
+        <span class="name" id="v-name">—</span>
+        <span class="sub" id="v-sub">—</span>
+      </div>
+      <div class="viewmode-toggle">
+        <button id="mode-anomaly" class="active">ANOMALY FOOTPRINT</button>
+        <button id="mode-recon">PROBABLE RECONSTRUCTION</button>
+      </div>
+    </div>
+
+    <div class="canvas-wrap" id="canvas-wrap">
+      <div class="depth-label" id="depth-label">— buried</div>
+      <div class="canvas-hint">drag to orbit · scroll to zoom</div>
+      <div class="natural-overlay" id="natural-overlay">
+        <div class="box">
+          <div class="icon">⛰</div>
+          <h3 style="font-size:16px;">No reconstruction generated</h3>
+          <p>CARA AI classified this anomaly as a natural landform, not an architectural feature — it was suppressed by
+            false-positive filtering before reaching the reconstruction stage. Only candidate or confirmed cultural
+            structures are eligible for probable reconstruction.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-strip">
+      <div class="confidence-row">
+        <div class="conf-ring" id="conf-ring"><span id="conf-value">—</span></div>
+        <div class="conf-text">
+          <div class="label">AI RECONSTRUCTION CONFIDENCE</div>
+          <div class="desc" id="conf-desc">Select a zone to generate its probable reconstruction.</div>
+        </div>
+      </div>
+
+      <div class="stat-grid" id="stat-grid"></div>
+
+      <div class="basis">
+        <h4>BASIS FOR THIS RECONSTRUCTION</h4>
+        <ul id="basis-list"></ul>
+      </div>
+
+      <div class="disclaimer-banner">
+        <span>⚠</span>
+        <span><strong>Probable, not verified.</strong> This is an AI-generated hypothesis of form based on remote-sensing
+          geometry and typological comparison to catalogued Vijayanagara structures — not an excavation record.
+          Field survey (GPR / test trench) is required before any claim of confirmation.</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="sitefoot">
+  <div class="wrap">
+    <span>ANTARATNA — PROTOTYPE</span>
+    <span>NON-INVASIVE ARCHAEOLOGICAL INTELLIGENCE</span>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const ZONES = [
+  { id:"Z065", px:26, status:"candidate", score:56, lat:15.34342, lon:76.46242,
+    cluster:"Z065 · 26 px anomaly cluster · no known ASI site within 350m",
+    x:-0.6, z:0.4,
+    structureName:"Unrecorded Pillared Mandapa & Plinth Foundation",
+    depth:"0.8m – 1.6m", type:"Candidate Temple Plinth",
+    realSite:"Unregistered candidate mound with distinct rectangular compaction footprint. Subsurface spectral signatures consistent with 14th-century Vijayanagara dressed-stone foundation blocks and laterite rubble infill.",
+    explains: {
+      soil: { icon:"🧪", name:"Soil anomaly", pct:74, tag:"SWIR SPECTRAL", tagCls:"soil-tag",
+        body:"Soil anomaly at 74% — marked spectral deviation in bare-soil mineral composition and reflectance pattern. Sentinel-2 SWIR bands B11 (1610 nm) and B12 (2190 nm) show anomalous absorption consistent with compacted cultural deposits sealed beneath 0.8–1.6 m of post-medieval alluvial overburden.",
+        detail:"The buried basalt and laterite rubble platform restricts downward moisture percolation, producing persistent dry-soil thermal signatures visible during post-monsoon diurnal cooling cycles (October–December). Bare Soil Index (BSI) exceeds +2.8σ compared to surrounding agricultural plots. The anomaly footprint matches a rectilinear 26.5 m × 18.2 m outline with a 92° East-West orientation — consistent with Vijayanagara ceremonial pavilion layouts documented at the Hampi Royal Centre.",
+        evidence:"Cross-referenced with ASI archival maps and National Monuments Authority database: no registered protected monument within 350 m radius. This candidate is classified as a high-priority field survey target for magnetometer and ground-penetrating radar (GPR) verification during the 2026 winter dry season.",
+        sensor:"Sentinel-2 B11/B12", depth:"0.8m – 1.6m", cluster:"26 px cluster", prox:">350m isolation" },
+      veg: { icon:"🌿", name:"Vegetation stress (NDVI)", pct:76, tag:"CROP MARK", tagCls:"veg-tag",
+        body:"Vegetation stress at 76% — pronounced photosynthetic deficit and stunted canopy height detected across the target footprint. Negative crop mark formation visible in the Red-Edge (B05, 705 nm) and NIR (B08, 842 nm) bands during February–April dry-stress observation window.",
+        detail:"Shallow masonry plinths and compacted rubble fill at 0.6–1.2 m depth restrict root-zone development, producing a rectilinear orthogonal stress outline visible against the surrounding irrigated paddy canopy. The stress geometry aligns with the soil anomaly boundary, strongly confirming a shared subsurface cause. NDVI difference (ΔmNDVI) between anomaly footprint and surrounding field: −0.18 (significant at p < 0.01).",
+        evidence:"Temporal analysis across 18 months of Sentinel-2 revisits (2024–2025) shows the crop stress pattern persists across seasons but intensifies during February–April dry cycles — a hallmark of foundation-induced crop marks rather than irrigation-related variation.",
+        sensor:"RedEdge B05/NIR B08", depth:"0.6m – 1.2m", cluster:"420 m² area", prox:"Rectilinear E-W" },
+      boundary: { icon:"📐", name:"Boundary & mound relief", pct:null, tag:"ORTHOGONAL GEOMETRY", tagCls:"boundary-tag",
+        body:"Overall detection boundary — 26 px anomaly cluster from the raw CARA AI scan. Surface relief model indicates a subtle 0.35 m elevated terrace with sharp 90° boundary angles distinguishable from surrounding paddy-field contours.",
+        detail:"Perimeter dimensions span 26.5 m × 18.2 m with evidence of internal spatial partitions at 8.8 m intervals — typical of Vijayanagara multi-bay ceremonial mandapa layouts. Copernicus DEM GLO-30 elevation differential confirms the mound at 477.6 m ASL vs. 477.2 m surrounding baseline. The boundary azimuth of 92° (near-cardinal E-W) matches the dominant temple orientation in the Hampi UNESCO core zone.",
+        evidence:"LiDAR-equivalent micro-topographic analysis using Copernicus DEM GLO-30 at 30 m resolution, supplemented by Sentinel-2 shadow-angle decomposition during low solar elevation (December solstice window).",
+        sensor:"Cop-DEM GLO-30", depth:"Surface mound", cluster:"26.5m × 18.2m", prox:"92° Azimuth" },
+      ml: { icon:"🧠", name:"ML confidence", pct:76, tag:"CNN ENSEMBLE", tagCls:"ml-tag",
+        body:"Deep learning ensemble model assigns 76% archaeological confidence. The CARA AI multi-modal convolutional neural network was trained on 1,200+ verified Deccan plateau heritage structures including temples, stepped tanks, fortification walls, and granary platforms.",
+        detail:"Combined spatial-spectral feature attribution scores low for modern agricultural terracing, irrigation channels, and geological boulder formations — strongly favoring cultural origin. The model cross-validates against a hold-out test set of 280 verified sites with 94.2% precision and 91.8% recall. False-positive rate for geological lookalikes: <4.2%.",
+        evidence:"Grad-CAM activation maps highlight the rectilinear boundary and soil-NDVI co-occurrence as the primary features driving the classification. The ensemble combines a ResNet-50 spatial backbone with a 1D spectral classifier operating on all 12 Sentinel-2 bands.",
+        sensor:"CARA AI v2.1", depth:"High probability", cluster:"FP rate < 4.2%", prox:"Rank 1 candidate" }
+    }
+  },
+  { id:"Z207", px:42, status:"candidate", score:60, lat:15.338, lon:76.455, x:-1.8, z:1.0,
+    cluster:"Z207 · 42 px cluster · agricultural terrace edge", structureName:"Collapsed Wall Terrace", depth:"1.1m", type:"Fortification",
+    realSite:"Collapsed fortification wall segment partially buried under agricultural bund.",
+    explains:{ soil:{icon:"🧪",name:"Soil anomaly",pct:62,tag:"MODERATE",tagCls:"soil-tag",body:"Moderate soil anomaly at 62%. Linear compaction band detected parallel to field boundary.",detail:"Mixed laterite and rubble signature extends 45m along terrace edge.",evidence:"Pattern correlates with documented outer fortification alignment.",sensor:"Sentinel-2 MSI",depth:"1.1m",cluster:"42 px",prox:"200m from wall"},veg:{icon:"🌿",name:"Vegetation stress",pct:58,tag:"LINEAR MARK",tagCls:"veg-tag",body:"Linear crop stress at 58% along terrace scarp.",detail:"Single-axis stress pattern consistent with buried wall foundation.",evidence:"Visible in March-April L2A composites.",sensor:"NDVI",depth:"0.8m",cluster:"Linear 45m",prox:"Terrace edge"},boundary:{icon:"📐",name:"Boundary",pct:null,tag:"LINEAR",tagCls:"boundary-tag",body:"Linear feature 45m × 3m along terrace scarp.",detail:"Single-wall alignment, not enclosed structure.",evidence:"Matches outer fortification ring map.",sensor:"DEM/LiDAR",depth:"Surface",cluster:"45m × 3m",prox:"Fortification"},ml:{icon:"🧠",name:"ML confidence",pct:65,tag:"MODERATE",tagCls:"ml-tag",body:"65% confidence. Moderate match for fortification wall segment.",detail:"Lower score due to linear rather than enclosed geometry.",evidence:"Supplementary drone survey recommended.",sensor:"CARA AI",depth:"Moderate",cluster:"Linear",prox:"Survey needed"}}
+  },
+  { id:"Z219", px:38, status:"candidate", score:60, lat:15.342, lon:76.468, x:0.8, z:-0.3,
+    cluster:"Z219 · 38 px cluster · paddy field anomaly", structureName:"Buried Granary Platform", depth:"1.4m", type:"Storage",
+    realSite:"Candidate storage platform with compacted circular footprint beneath paddy field.",
+    explains:{ soil:{icon:"🧪",name:"Soil anomaly",pct:65,tag:"CIRCULAR",tagCls:"soil-tag",body:"Circular soil anomaly at 65%. Compact clay-laterite platform signature.",detail:"12m diameter circular footprint with radial symmetry.",evidence:"Consistent with Vijayanagara granary platforms documented at Kadirampura.",sensor:"Sentinel-2 B11",depth:"1.4m",cluster:"38 px",prox:">400m"},veg:{icon:"🌿",name:"Vegetation",pct:55,tag:"RING STRESS",tagCls:"veg-tag",body:"Ring-shaped crop stress at 55%.",detail:"Circular NDVI depression over buried platform.",evidence:"Visible across 3 seasonal composites.",sensor:"NDVI",depth:"1.0m",cluster:"12m dia",prox:"Circular"},boundary:{icon:"📐",name:"Boundary",pct:null,tag:"CIRCULAR",tagCls:"boundary-tag",body:"Circular mound 12m diameter.",detail:"Slight 0.2m elevation above surrounding field.",evidence:"DEM micro-topography analysis.",sensor:"DEM",depth:"Surface",cluster:"12m",prox:"Paddy field"},ml:{icon:"🧠",name:"ML confidence",pct:60,tag:"MODERATE",tagCls:"ml-tag",body:"60% confidence for storage structure.",detail:"Circular geometry matches granary training set.",evidence:"Field verification pending.",sensor:"CARA AI",depth:"Moderate",cluster:"Circular",prox:"Pending"}}
+  },
+  { id:"Z221", px:55, status:"candidate", score:60, lat:15.330, lon:76.448, x:-2.0, z:1.6,
+    cluster:"Z221 · 55 px cluster · river terrace edge", structureName:"River Ghat Steps", depth:"0.6m", type:"Stepped Ghat",
+    realSite:"Candidate river ghat with stepped stone descent toward Tungabhadra riverbank.",
+    explains:{ soil:{icon:"🧪",name:"Soil anomaly",pct:70,tag:"STEPPED",tagCls:"soil-tag",body:"Stepped soil anomaly at 70% descending toward river.",detail:"Alternating compacted stone and sediment layers.",evidence:"Matches known Vijayanagara riverside ghat typology.",sensor:"Sentinel-2",depth:"0.6m",cluster:"55 px",prox:"Riverbank"},veg:{icon:"🌿",name:"Vegetation",pct:45,tag:"SPARSE",tagCls:"veg-tag",body:"Sparse vegetation at 45% on exposed stone steps.",detail:"Low canopy over partially exposed stone descent.",evidence:"Seasonal variation minimal — permanent exposure.",sensor:"NDVI",depth:"Surface",cluster:"30m run",prox:"River edge"},boundary:{icon:"📐",name:"Boundary",pct:null,tag:"STEPPED",tagCls:"boundary-tag",body:"Stepped descent 30m × 8m toward river.",detail:"5 distinct step levels at 0.4m intervals.",evidence:"River erosion partially exposing upper steps.",sensor:"DEM",depth:"Multi-level",cluster:"30m × 8m",prox:"Tungabhadra"},ml:{icon:"🧠",name:"ML confidence",pct:68,tag:"HIGH",tagCls:"ml-tag",body:"68% confidence for stepped ghat structure.",detail:"Strong match with documented river access infrastructure.",evidence:"Priority survey for 2026 monsoon-recession window.",sensor:"CARA AI",depth:"High",cluster:"Stepped",prox:"Priority"}}
+  },
+  { id:"Z186", px:72, status:"known", score:60, lat:15.335, lon:76.462, x:-1.4, z:0.6,
+    cluster:"Z186 · 72 px cluster · documented heritage corridor", structureName:"Vijayanagara Stone Mandapa", depth:"1.2m – 2.4m", type:"Temple Hall",
+    realSite:"Matches a known ASI-protected structure. Buried basalt pillared mandapa and dressed stone foundation confirmed by 2019 test trench.",
+    explains:{ soil:{icon:"🧪",name:"Soil anomaly",pct:82,tag:"CONFIRMED",tagCls:"soil-tag",body:"Soil anomaly at 82%. Dense compacted rubble foundation producing significant thermal inertia differentials.",detail:"Ground conductivity survey matches stone plinth perimeter alignment from ASI archival records. Verified by 2019 test trench.",evidence:"ASI Protected Monument No. KA-2847. Ground truth validated.",sensor:"Sentinel-2 / GPR",depth:"1.2m – 2.4m",cluster:"72 px",prox:"ASI Protected"},veg:{icon:"🌿",name:"Vegetation stress",pct:80,tag:"SEVERE",tagCls:"veg-tag",body:"Sharp linear crop marks at 80% delineating courtyard perimeter.",detail:"High stress over central plinth during Feb-Apr window.",evidence:"Multi-year temporal stack confirms persistent marks.",sensor:"NDVI RedEdge",depth:"1.0m – 1.8m",cluster:"560 m²",prox:"Temple axis"},boundary:{icon:"📐",name:"Boundary",pct:null,tag:"DOCUMENTED",tagCls:"boundary-tag",body:"32m × 22m rectangular enclosure with axial entrance facing east.",detail:"Multi-tiered stone stylobate partially covered by alluvial silt.",evidence:"Matches ASI survey plan 1987.",sensor:"LiDAR / UAV",depth:"Elevated plinth",cluster:"32m × 22m",prox:"Riverbank sector"},ml:{icon:"🧠",name:"ML confidence",pct:92,tag:"GROUND TRUTH",tagCls:"ml-tag",body:"92% confidence. Ground truth benchmark site used in model training.",detail:"98% structural correlation with 15th-century royal centre pavilion layouts.",evidence:"This site serves as a positive calibration anchor for the CARA AI ensemble.",sensor:"CARA AI v2.1",depth:"Confirmed",cluster:"Verified ASI",prox:"Ground truth"}}
+  },
+  { id:"Z016", px:35, status:"candidate", score:60, lat:15.345, lon:76.470, x:1.2, z:-1.0,
+    cluster:"Z016 · 35 px cluster", structureName:"Candidate Platform", depth:"1.5m", type:"Platform",
+    realSite:"Low rectangular mound in fallow field.",
+    explains:{ soil:{icon:"🧪",name:"Soil anomaly",pct:60,tag:"MODERATE",tagCls:"soil-tag",body:"Moderate soil anomaly at 60%.",detail:"Faint compaction signature.",evidence:"Needs field verification.",sensor:"Sentinel-2",depth:"1.5m",cluster:"35 px",prox:"Fallow field"},veg:{icon:"🌿",name:"Vegetation",pct:50,tag:"MILD",tagCls:"veg-tag",body:"Mild stress at 50%.",detail:"Diffuse pattern.",evidence:"Seasonal only.",sensor:"NDVI",depth:"1.2m",cluster:"20m²",prox:"Field edge"},boundary:{icon:"📐",name:"Boundary",pct:null,tag:"FAINT",tagCls:"boundary-tag",body:"Faint rectangular outline.",detail:"16m × 10m.",evidence:"DEM analysis.",sensor:"DEM",depth:"Surface",cluster:"16m × 10m",prox:"Isolated"},ml:{icon:"🧠",name:"ML confidence",pct:58,tag:"MODERATE",tagCls:"ml-tag",body:"58% confidence.",detail:"Moderate match.",evidence:"Survey recommended.",sensor:"CARA AI",depth:"Moderate",cluster:"Moderate",prox:"Pending"}}
+  },
+  { id:"Z090", px:28, status:"candidate", score:60, lat:15.350, lon:76.442, x:-2.4, z:-1.2,
+    cluster:"Z090 · 28 px cluster", structureName:"Boulder Terrace", depth:"N/A", type:"Natural",
+    realSite:"Likely natural granite boulder formation.",
+    explains:{ soil:{icon:"🧪",name:"Soil anomaly",pct:30,tag:"LOW",tagCls:"soil-tag",body:"Low soil anomaly at 30%.",detail:"Natural regolith signature.",evidence:"Baseline reading.",sensor:"Sentinel-2",depth:"N/A",cluster:"28 px",prox:"Natural"},veg:{icon:"🌿",name:"Vegetation",pct:22,tag:"NATURAL",tagCls:"veg-tag",body:"Natural arid scrub at 22%.",detail:"Typical of granite outcrops.",evidence:"No geometric anomaly.",sensor:"NDVI",depth:"Surface",cluster:"Dispersed",prox:"Granite"},boundary:{icon:"📐",name:"Boundary",pct:null,tag:"AMORPHOUS",tagCls:"boundary-tag",body:"Irregular natural contour.",detail:"No architectural symmetry.",evidence:"Geological formation.",sensor:"DEM",depth:"Bedrock",cluster:"Natural",prox:"Geological"},ml:{icon:"🧠",name:"ML confidence",pct:25,tag:"SUPPRESSED",tagCls:"ml-tag",body:"25% — filtered by false-positive suppression.",detail:"Confirmed non-archaeological.",evidence:"Geological landform.",sensor:"CARA AI",depth:"Low",cluster:"Baseline",prox:"Natural"}}
+  },
+  { id:"Z105", px:48, status:"candidate", score:60, lat:15.333, lon:76.458, x:0.0, z:1.2,
+    cluster:"Z105 · 48 px cluster", structureName:"Stepped Tank", depth:"0.9m", type:"Hydraulic",
+    realSite:"Possible ancient stepped water tank.",
+    explains:{ soil:{icon:"🧪",name:"Soil anomaly",pct:68,tag:"HYDRAULIC",tagCls:"soil-tag",body:"Hydraulic sediment anomaly at 68%.",detail:"High-moisture clay core with stone embankment.",evidence:"Matches Vijayanagara tank typology.",sensor:"Sentinel-2",depth:"0.9m",cluster:"48 px",prox:"Canal link"},veg:{icon:"🌿",name:"Vegetation",pct:62,tag:"RING STRESS",tagCls:"veg-tag",body:"Concentric ring stress at 62%.",detail:"Square ring of crop stress framing central depression.",evidence:"Consistent with retaining wall outline.",sensor:"NDVI",depth:"0.8m",cluster:"480 m²",prox:"Square tank"},boundary:{icon:"📐",name:"Boundary",pct:null,tag:"SQUARE",tagCls:"boundary-tag",body:"Square 22m × 22m depression.",detail:"Stepped gradient visible on DEM.",evidence:"Feed channel inlet detected.",sensor:"DEM",depth:"Multi-level",cluster:"22m × 22m",prox:"Canal network"},ml:{icon:"🧠",name:"ML confidence",pct:72,tag:"HIGH",tagCls:"ml-tag",body:"72% confidence for hydraulic structure.",detail:"Strong match with documented Vijayanagara temple tanks.",evidence:"Priority candidate for GPR survey.",sensor:"CARA AI",depth:"High",cluster:"Hydraulic",prox:"Temple sector"}}
+  },
+  { id:"Z050", px:32, status:"candidate", score:59, lat:15.348, lon:76.463, x:0.4, z:-0.7, cluster:"Z050 · 32 px", structureName:"Candidate Enclosure", depth:"1.3m", type:"Enclosure", realSite:"Faint enclosure footprint in scrub field.",
+    explains:{ soil:{icon:"🧪",name:"Soil",pct:55,tag:"FAINT",tagCls:"soil-tag",body:"Faint compaction at 55%.",detail:"Needs GPR.",evidence:"Candidate.",sensor:"S-2",depth:"1.3m",cluster:"32 px",prox:">300m"},veg:{icon:"🌿",name:"Vegetation",pct:48,tag:"MILD",tagCls:"veg-tag",body:"Mild stress at 48%.",detail:"Diffuse.",evidence:"Seasonal.",sensor:"NDVI",depth:"1.0m",cluster:"250 m²",prox:"Scrub"},boundary:{icon:"📐",name:"Boundary",pct:null,tag:"FAINT",tagCls:"boundary-tag",body:"Faint 18m × 14m outline.",detail:"Low relief.",evidence:"DEM.",sensor:"DEM",depth:"Surface",cluster:"18m × 14m",prox:"Isolated"},ml:{icon:"🧠",name:"ML",pct:52,tag:"MODERATE",tagCls:"ml-tag",body:"52% confidence.",detail:"Below primary threshold.",evidence:"Secondary survey.",sensor:"CARA AI",depth:"Moderate",cluster:"Moderate",prox:"Pending"}}
+  },
+  { id:"Z051", px:30, status:"candidate", score:59, lat:15.337, lon:76.453, x:-1.0, z:0.9, cluster:"Z051 · 30 px", structureName:"Possible Platform", depth:"1.1m", type:"Platform", realSite:"Low mound in fallow field.",
+    explains:{ soil:{icon:"🧪",name:"Soil",pct:58,tag:"MODERATE",tagCls:"soil-tag",body:"Moderate anomaly at 58%.",detail:"Mixed signal.",evidence:"Needs verification.",sensor:"S-2",depth:"1.1m",cluster:"30 px",prox:">250m"},veg:{icon:"🌿",name:"Vegetation",pct:52,tag:"MODERATE",tagCls:"veg-tag",body:"Moderate stress at 52%.",detail:"Seasonal pattern.",evidence:"Multi-year stack.",sensor:"NDVI",depth:"0.9m",cluster:"200 m²",prox:"Field"},boundary:{icon:"📐",name:"Boundary",pct:null,tag:"MODERATE",tagCls:"boundary-tag",body:"20m × 12m outline.",detail:"Subtle elevation.",evidence:"DEM.",sensor:"DEM",depth:"Surface",cluster:"20m × 12m",prox:"Fallow"},ml:{icon:"🧠",name:"ML",pct:55,tag:"MODERATE",tagCls:"ml-tag",body:"55% confidence.",detail:"Moderate match.",evidence:"Field survey recommended.",sensor:"CARA AI",depth:"Moderate",cluster:"Moderate",prox:"Pending"}}
+  }
+];
+</script>
+<script>
+/* ============================================================
+   Reconstruct — procedural 3D generation from Discover zone data
+   ============================================================ */
+
+function statusScoreColor(score){
+  if (score >= 80) return "#86ad78";
+  if (score >= 60) return "#c9a24b";
+  return "#8a6a45";
+}
+
+function parseDepthRange(zone){
+  const nums = ((zone.depth||"").match(/\d+(\.\d+)?/g) || []).map(Number);
+  if (nums.length === 0) return { min: 0.8, max: 1.4 };
+  if (nums.length === 1) return { min: nums[0], max: nums[0] };
+  return { min: nums[0], max: nums[1] };
+}
+
+function parseDims(zone){
+  const b = zone.explains && zone.explains.boundary;
+  const text = [b && b.body, b && b.detail, b && b.cluster, zone.cluster].filter(Boolean).join(" ");
+  let m = text.match(/(\d+(?:\.\d+)?)\s*m\s*diameter/i);
+  if (m) return { shape: "circle", diameter: parseFloat(m[1]) };
+  m = text.match(/(\d+(?:\.\d+)?)\s*m\s*[×x]\s*(\d+(?:\.\d+)?)\s*m/i);
+  if (m) return { shape: "rect", w: parseFloat(m[1]), d: parseFloat(m[2]) };
+  return { shape: "rect", w: 16, d: 12 };
+}
+
+function parseStepCount(text){
+  const m = (text||"").match(/(\d+)\s*(distinct )?step/i);
+  return m ? parseInt(m[1], 10) : 5;
+}
+
+/* ---------------- Three.js scene ---------------- */
+
+const wrapEl = document.getElementById("canvas-wrap");
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x120f0b, 0.045);
+
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+camera.position.set(9, 7, 11);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+wrapEl.insertBefore(renderer.domElement, wrapEl.firstChild);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 4;
+controls.maxDistance = 30;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.target.set(0, 0.6, 0);
+
+const hemi = new THREE.HemisphereLight(0x8a7a5e, 0x120f0b, 0.55);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffe8bf, 1.05);
+sun.position.set(8, 12, 6);
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x6fa8c9, 0.18);
+fill.position.set(-8, 5, -6);
+scene.add(fill);
+
+// ground
+const groundGeo = new THREE.CircleGeometry(14, 48);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x241d16, roughness: 1, metalness: 0 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+const grid = new THREE.GridHelper(28, 28, 0x3d3122, 0x241d16);
+grid.position.y = 0.001;
+scene.add(grid);
+
+// soil overlay plane (represents current ground surface hiding the buried structure)
+const soilMat = new THREE.MeshStandardMaterial({
+  color: 0x3d3122, roughness: 1, transparent: true, opacity: 0.82, depthWrite: false
+});
+const soilPlane = new THREE.Mesh(new THREE.CircleGeometry(6, 40), soilMat);
+soilPlane.rotation.x = -Math.PI / 2;
+soilPlane.position.y = 0.05;
+scene.add(soilPlane);
+
+let structureGroup = new THREE.Group();
+scene.add(structureGroup);
+
+function resize(){
+  const w = wrapEl.clientWidth, h = wrapEl.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(wrapEl);
+resize();
+
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+/* ---------------- Materials ---------------- */
+const matStone   = new THREE.MeshStandardMaterial({ color: 0x7a6a52, roughness: 0.85, metalness: 0.05 });
+const matStoneDk = new THREE.MeshStandardMaterial({ color: 0x584a38, roughness: 0.9, metalness: 0.05 });
+const matBrass   = new THREE.MeshStandardMaterial({ color: 0xc9a24b, roughness: 0.45, metalness: 0.35 });
+const matLaterite= new THREE.MeshStandardMaterial({ color: 0xc1502e, roughness: 0.8, metalness: 0.05 });
+const matThatch  = new THREE.MeshStandardMaterial({ color: 0x8a7146, roughness: 1, metalness: 0 });
+const matWater   = new THREE.MeshStandardMaterial({ color: 0x6fa8c9, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.75 });
+const matBoulder = new THREE.MeshStandardMaterial({ color: 0x3d3122, roughness: 1, metalness: 0.02 });
+
+const SCALE = 1 / 4.2; // meters -> scene units
+
+/* ---------------- Procedural builders ---------------- */
+
+function box(w,h,d,mat){ return new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); }
+
+function buildMandapa(dims){
+  const g = new THREE.Group();
+  const w = Math.max(dims.w||16,6)*SCALE, d = Math.max(dims.d||12,6)*SCALE;
+  const plinthH = 0.35;
+  const plinth = box(w, plinthH, d, matStone);
+  plinth.position.y = plinthH/2;
+  g.add(plinth);
+
+  const cols = Math.max(3, Math.round(w/1.1));
+  const rows = Math.max(2, Math.round(d/1.1));
+  const pillarH = 1.6;
+  const pr = 0.07;
+  for (let i=0;i<cols;i++){
+    for (let j=0;j<rows;j++){
+      if (i>0 && i<cols-1 && j>0 && j<rows-1) continue; // perimeter pillars only
+      const px = -w/2 + (w/(cols-1))*i;
+      const pz = -d/2 + (d/(rows-1))*j;
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(pr,pr,pillarH,10), matBrass);
+      pillar.position.set(px, plinthH+pillarH/2, pz);
+      g.add(pillar);
+    }
+  }
+  const roof = box(w+0.3, 0.16, d+0.3, matStoneDk);
+  roof.position.y = plinthH+pillarH+0.08;
+  g.add(roof);
+  return g;
+}
+
+function buildFortification(dims){
+  const g = new THREE.Group();
+  const len = Math.max(dims.w||dims.diameter||30,10)*SCALE;
+  const thick = Math.max((dims.d||3)*0.6, 0.6)*SCALE;
+  const h = 1.4;
+  const wall = box(len, h, thick, matLaterite);
+  wall.position.y = h/2;
+  g.add(wall);
+  const crenCount = Math.max(6, Math.round(len/0.6));
+  for (let i=0;i<crenCount;i++){
+    if (i%2!==0) continue;
+    const cren = box(0.3, 0.28, thick*1.05, matStoneDk);
+    cren.position.set(-len/2 + (len/(crenCount-1))*i, h+0.14, 0);
+    g.add(cren);
+  }
+  return g;
+}
+
+function buildGranary(dims){
+  const g = new THREE.Group();
+  const dia = Math.max(dims.diameter||dims.w||10,4)*SCALE;
+  const r = dia/2;
+  const baseH = 1.1;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(r, r*1.06, baseH, 24), matStone);
+  base.position.y = baseH/2;
+  g.add(base);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(r*1.01, 0.05, 8, 24), matBrass);
+  band.rotation.x = Math.PI/2;
+  band.position.y = baseH*0.75;
+  g.add(band);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(r*1.08, r*0.95, 24), matThatch);
+  roof.position.y = baseH + (r*0.95)/2;
+  g.add(roof);
+  return g;
+}
+
+function buildGhat(dims, stepsHint){
+  const g = new THREE.Group();
+  const steps = stepsHint || 5;
+  const run = Math.max(dims.w||30,8)*SCALE;
+  const width = Math.max(dims.d||8,3)*SCALE;
+  const stepDepth = run/steps;
+  const stepH = 0.22;
+  for (let i=0;i<steps;i++){
+    const s = box(width, stepH*(i+1), stepDepth*0.96, i===0?matStoneDk:matStone);
+    s.position.set(0, (stepH*(i+1))/2 - 0.05*i, -run/2 + stepDepth*i + stepDepth/2);
+    g.add(s);
+  }
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(width*1.6, run*0.6), matWater);
+  water.rotation.x = -Math.PI/2;
+  water.position.set(0, 0.02, run/2 + run*0.25);
+  g.add(water);
+  return g;
+}
+
+function buildTank(dims){
+  const g = new THREE.Group();
+  const w = Math.max(dims.w||dims.diameter||20,8)*SCALE;
+  const levels = 4;
+  for (let i=0;i<levels;i++){
+    const t = i/(levels-1);
+    const size = w*(1 - t*0.55);
+    const wall = box(size, 0.3, size, i===levels-1?matStoneDk:matStone);
+    wall.position.y = 0.2 - i*0.32;
+    g.add(wall);
+  }
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(w*0.42, w*0.42), matWater);
+  water.rotation.x = -Math.PI/2;
+  water.position.y = 0.24 - (levels-1)*0.32 + 0.02;
+  g.add(water);
+  return g;
+}
+
+function buildPlatform(dims){
+  const g = new THREE.Group();
+  const w = Math.max(dims.w||16,5)*SCALE, d = Math.max(dims.d||12,5)*SCALE;
+  const base = box(w, 0.3, d, matStone);
+  base.position.y = 0.15;
+  g.add(base);
+  const wallH = 0.5, wt = 0.12;
+  const segs = [
+    [w, wt, 0, -d/2],
+    [w, wt, 0, d/2],
+    [wt, d, -w/2, 0],
+    [wt, d, w/2, 0]
+  ];
+  segs.forEach(([bw,bd,px,pz])=>{
+    const seg = box(bw, wallH, bd, matStoneDk);
+    seg.position.set(px, 0.3+wallH/2, pz);
+    g.add(seg);
+  });
+  return g;
+}
+
+function buildBoulders(){
+  const g = new THREE.Group();
+  for (let i=0;i<6;i++){
+    const r = 0.3 + Math.random()*0.5;
+    const b = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), matBoulder);
+    b.position.set((Math.random()-0.5)*4, r*0.6, (Math.random()-0.5)*4);
+    b.rotation.set(Math.random(),Math.random(),Math.random());
+    g.add(b);
+  }
+  return g;
+}
+
+function ghostFromDims(dims){
+  const w = (dims.diameter ? dims.diameter : dims.w||14) * SCALE;
+  const d = (dims.diameter ? dims.diameter : dims.d||10) * SCALE;
+  const h = 0.9;
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x6fa8c9, wireframe: true, transparent: true, opacity: 0.55 });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.y = h/2;
+  const g = new THREE.Group();
+  g.add(m);
+  return g;
+}
+
+const BUILDERS = {
+  "Candidate Temple Plinth": buildMandapa,
+  "Temple Hall": buildMandapa,
+  "Fortification": buildFortification,
+  "Storage": buildGranary,
+  "Stepped Ghat": buildGhat,
+  "Hydraulic": buildTank,
+  "Platform": buildPlatform,
+  "Enclosure": buildPlatform
+};
+
+/* ---------------- State + UI wiring ---------------- */
+
+let currentZone = null;
+let mode = "anomaly"; // "anomaly" | "recon"
+
+function clearStructure(){
+  while (structureGroup.children.length) structureGroup.remove(structureGroup.children[0]);
+}
+
+function loadZone(zone){
+  currentZone = zone;
+  clearStructure();
+
+  const isNatural = zone.type === "Natural";
+  document.getElementById("natural-overlay").classList.toggle("show", isNatural);
+
+  const dims = parseDims(zone);
+  const depthR = parseDepthRange(zone);
+  const avgDepth = (depthR.min+depthR.max)/2;
+  const burial = Math.min(Math.max(avgDepth*SCALE*1.6, 0.3), 2.2);
+
+  document.getElementById("v-name").textContent = zone.structureName || zone.id;
+  document.getElementById("v-sub").textContent = `${zone.id} · ${zone.type} · ${zone.px} px cluster`;
+  document.getElementById("depth-label").textContent = zone.depth && zone.depth !== "N/A"
+    ? `buried ${zone.depth} below surface` : "surface-exposed";
+
+  const mlPct = zone.explains && zone.explains.ml ? zone.explains.ml.pct : zone.score;
+  const conf = mlPct != null ? mlPct : zone.score;
+  document.getElementById("conf-value").textContent = isNatural ? "—" : conf + "%";
+  document.getElementById("conf-ring").style.background = isNatural
+    ? "conic-gradient(#3d3122 0%, #3d3122 100%)"
+    : `conic-gradient(${statusScoreColor(conf)} ${conf}%, #2c2318 ${conf}%)`;
+  document.getElementById("conf-desc").textContent = isNatural
+    ? "Suppressed by false-positive filtering — classified as a geological landform, not eligible for reconstruction."
+    : `CARA AI's confidence that "${zone.structureName}" is the correct structural interpretation of this anomaly, based on ${zone.px}px spatial cluster, spectral, and typological matching.`;
+
+  // stat grid
+  const sg = document.getElementById("stat-grid");
+  sg.innerHTML = "";
+  const stats = [
+    ["STRUCTURE TYPE", zone.type],
+    ["BURIAL DEPTH", zone.depth || "N/A"],
+    ["ANOMALY CLUSTER", `${zone.px} px`],
+    ["STATUS", zone.status === "known" ? "ASI documented" : "Undocumented candidate"]
+  ];
+  stats.forEach(([k,v])=>{
+    const c = document.createElement("div");
+    c.className = "stat-cell";
+    c.innerHTML = `<div class="k">${k}</div><div class="v">${v}</div>`;
+    sg.appendChild(c);
+  });
+
+  // basis list from the zone's own multi-sensor explanation
+  const basis = document.getElementById("basis-list");
+  basis.innerHTML = "";
+  if (zone.explains){
+    ["soil","veg","boundary","ml"].forEach(k=>{
+      const e = zone.explains[k];
+      if (!e) return;
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="tag">${e.tag||""}</span><span>${e.icon||""} ${e.name}${e.pct!=null?` — ${e.pct}%`:""}</span>`;
+      basis.appendChild(li);
+    });
+  }
+
+  const modeReconBtn = document.getElementById("mode-recon");
+  if (isNatural){
+    modeReconBtn.disabled = true;
+    structureGroup.add(buildBoulders());
+    setMode("anomaly", true);
+    return;
+  }
+  modeReconBtn.disabled = false;
+
+  const builder = BUILDERS[zone.type] || buildPlatform;
+  const stepsHint = zone.type === "Stepped Ghat"
+    ? parseStepCount((zone.explains && zone.explains.boundary && zone.explains.boundary.detail) || "")
+    : undefined;
+  const realStruct = builder(dims, stepsHint);
+  realStruct.userData.isReal = true;
+  const ghostStruct = ghostFromDims(dims);
+  ghostStruct.userData.isGhost = true;
+
+  structureGroup.add(realStruct);
+  structureGroup.add(ghostStruct);
+  structureGroup.userData.burial = burial;
+
+  applyMode(mode, true);
+}
+
+function applyMode(m){
+  if (!currentZone) return;
+  const real = structureGroup.children.find(c=>c.userData.isReal);
+  const ghost = structureGroup.children.find(c=>c.userData.isGhost);
+  const burial = structureGroup.userData.burial || 0.8;
+
+  if (m === "anomaly"){
+    if (real) real.visible = false;
+    if (ghost) { ghost.visible = true; ghost.position.y = -burial*0.35; }
+    soilMat.opacity = 0.82;
+    document.getElementById("depth-label").style.opacity = "1";
+  } else {
+    if (ghost) ghost.visible = false;
+    if (real) { real.visible = true; real.position.y = 0; }
+    soilMat.opacity = 0.12;
+    document.getElementById("depth-label").style.opacity = "0.4";
+  }
+}
+
+function setMode(m){
+  mode = m;
+  document.getElementById("mode-anomaly").classList.toggle("active", m==="anomaly");
+  document.getElementById("mode-recon").classList.toggle("active", m==="recon");
+  applyMode(m);
+}
+
+document.getElementById("mode-anomaly").addEventListener("click", ()=>setMode("anomaly"));
+document.getElementById("mode-recon").addEventListener("click", ()=>{
+  if (currentZone && currentZone.type === "Natural") return;
+  setMode("recon");
+});
+
+/* ---------------- Zone list ---------------- */
+
+function renderZoneList(){
+  const list = document.getElementById("zone-list");
+  list.innerHTML = "";
+  const sorted = [...ZONES].sort((a,b)=> (b.explains?.ml?.pct||b.score) - (a.explains?.ml?.pct||a.score));
+  document.getElementById("zone-count").textContent = `${sorted.length} zones · from CARA AI scan`;
+
+  sorted.forEach(zone=>{
+    const conf = zone.explains && zone.explains.ml ? zone.explains.ml.pct : zone.score;
+    const btn = document.createElement("button");
+    btn.className = "zone-card" + (zone.type==="Natural" ? " is-natural" : "");
+    btn.innerHTML = `
+      <div class="zone-card-top">
+        <span class="zone-card-id">${zone.id}</span>
+        <span class="zone-card-score" style="color:${statusScoreColor(conf)};border-color:${statusScoreColor(conf)}66;">${conf}%</span>
+      </div>
+      <div class="zone-card-name">${zone.structureName}</div>
+      <div class="zone-card-type">${zone.type}${zone.status==="known" ? " · DOCUMENTED" : ""}</div>
+    `;
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(".zone-card").forEach(c=>c.classList.remove("active"));
+      btn.classList.add("active");
+      setMode("anomaly");
+      loadZone(zone);
+    });
+    list.appendChild(btn);
+    zone._el = btn;
+  });
+
+  const best = sorted.find(z=>z.type!=="Natural") || sorted[0];
+  if (best){
+    best._el.classList.add("active");
+    loadZone(best);
+  }
+}
+
+renderZoneList();
+</script>
+</body>
+</html>
